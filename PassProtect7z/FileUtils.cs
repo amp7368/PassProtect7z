@@ -2,6 +2,7 @@
     internal class FileUtils {
         private static readonly string ROOT = Program.ROOT_DIR;
         public static readonly string CONFIG = Path.Combine(ROOT, Program.CONFIG_FILE_NAME);
+        public static readonly string CACHE = Path.Combine(ROOT, "cache.json");
         public static readonly string ORIGINAL_DIR = Path.Combine(ROOT, "Original");
         public static readonly string ENCRYPTED_DIR = Path.Combine(ROOT, "Encrypted");
         public static readonly string DO_ENCRYPTION_DIR = Path.Combine(ROOT, "DoEncryption");
@@ -59,7 +60,7 @@
             if (file1.Length != file2.Length) { return false; }
             FileStream read1 = file1.OpenRead();
             FileStream read2 = file2.OpenRead();
-            int length = 1024;
+            int length = 4096;
             byte[] buffer1 = new byte[length];
             byte[] buffer2 = new byte[length];
             while (true) {

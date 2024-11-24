@@ -15,6 +15,7 @@ namespace PassProtect7z {
             encryptedFolderPath = FileUtils.EncryptedArchivePath(relativePath);
             doEncryptionPath = FileUtils.DoEncryptionArchivePath(relativePath);
         }
+
         public void EncryptFolder() {
             ProcessStartInfo encryptingPInfo = new("7z", $"a \"{doEncryptionPath}\" * -p{Program.Password} -mhe");
             encryptingPInfo.RedirectStandardOutput = true;
@@ -29,27 +30,41 @@ namespace PassProtect7z {
             File.Move(doEncryptionPath, encryptedFolderPath, true);
         }
 
-        public bool ShouldSkipEncryption() {
+        public bool ShouldSkipEncryption(string? originalArchiveRoot) {
+            if (ProgramConfig.get().AlwaysEncryptAgain) return false;
+
             string encryptedPath;
+
+            string? originalPath = null;
+            if (originalArchiveRoot != null) {
+                originalPath = Path.GetFullPath(relativePath, originalArchiveRoot);
+            }
             if (isFile) {
                 string relativeOutPath = Path.ChangeExtension(relativePath, ".7z");
                 encryptedPath = FileUtils.EncryptedArchivePath(relativeOutPath);
+
             } else {
                 encryptedPath = encryptedFolderPath;
             }
             if (!File.Exists(encryptedPath)) return false;
 
+            if (!Commands.CheckArchiveIntegrity(encryptedPath)) {
+                if (ProgramConfig.get().IgnoreEncryptedPasswords.Contains(encryptedPath)) {
+                    return true;
+                }
+                throw new Exception($"{encryptedPath} already exists with an unknown password or is corrupted");
+            }
+
             bool shouldSkip = ProgramConfig.get().isFileCreationAfter(encryptedPath);
-            if (shouldSkip && !ProgramConfig.get().SkipIntegrityCheck) {
-                shouldSkip = Commands.CheckArchiveIntegrity(encryptedPath);
+
+            if (originalPath != null && ProgramConfig.get().ShouldVerify7zContents) {
+                shouldSkip = shouldSkip && Commands.CheckArchiveMatches(originalPath, encryptedPath);
             }
 
             if (shouldSkip) {
-                Console.WriteLine($"{encryptedPath} already exists... Is after {ProgramConfig.get().SkipEncryptionTimestampFormat()} & has integrity.");
+                Console.WriteLine($"{encryptedPath} already exists... Archive contents match.");
                 return true;
             }
-            Console.WriteLine($"{encryptedPath} already exists with an unknown password or is corrupted");
-            File.Delete(encryptedPath);
             return false;
         }
 

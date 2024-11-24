@@ -10,7 +10,7 @@
 
         public void Run() {
             Encrypt encrypt = new(FileUtils.WORK_EXTRACT_DIR, archivePath, false);
-            if (encrypt.ShouldSkipEncryption()) return;
+            if (encrypt.ShouldSkipEncryption(rootPath)) return;
             if (Commands.Decrypt(rootPath, archivePath, FileUtils.WORK_EXTRACT_DIR)) {
                 encrypt.EncryptFolder();
                 FileUtils.CleanupFolder(FileUtils.WORK_EXTRACT_DIR);
@@ -23,7 +23,7 @@
                 Console.WriteLine($"{archivePath} has an known password. Copying.");
                 CopyAlreadyEncrypted(FileUtils.ENCRYPTED_DIR);
             } else {
-                Console.WriteLine($"{archivePath} has an unknown password or corrupted. Skipping.");
+                Console.WriteLine($"{archivePath} has an unknown password or corrupted. Copying.");
                 CopyAlreadyEncrypted(FileUtils.SKIPPED_DIR);
             }
         }
